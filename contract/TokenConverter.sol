@@ -3,6 +3,7 @@ pragma solidity 0.4.24;
  * 
  * @title Helps contracts guard agains reentrancy attacks.
  * @author Remco Bloemen <remco@2π.com>
+ * https://github.com/OpenZeppelin/zeppelin-solidity
  * @notice If you mark a function `nonReentrant`, you should also
  * mark it `external`.
  */
@@ -32,7 +33,7 @@ contract ReentrancyGuard {
 
 
 
-//Ownable
+
 /**
  * @title Ownable
  * @dev The Ownable contract has an owner address, and provides basic authorization control
@@ -99,9 +100,6 @@ contract IKyberNetwork{
 }
 
 
-
-
-
 contract IndTokenPayment is Ownable, ReentrancyGuard {                   
   address constant ETH_TOKEN_ADDRESS = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
   
@@ -113,7 +111,6 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
   
   event conversionSucceded(address from,uint256 fromTokenVal,uint256 minConversionRate,address dest,uint256 destTokenVal);
   event conversionFailed(address from,uint256 fromTokenVal,uint256 minConversionRate,address dest);
-  event changeConv(uint256);
   
   constructor(address kyberNetworkAddr,
               address indTokenAddr,
@@ -155,12 +152,9 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
                                                                  destinationWallet,
                                                                  2**255,
                                                                  minConversionRate,
-                                                                 affiliateWallet);
-                                                                 
-                                                                 
+                                                                 affiliateWallet);                                              
     
-    emit changeConv(convTokens);
-                                                                
+                                                              
     if(convTokens> 0){
         emit conversionSucceded(msg.sender,msg.value,minConversionRate,destinationWallet,convTokens);
     } else {
