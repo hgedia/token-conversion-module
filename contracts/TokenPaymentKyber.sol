@@ -1,5 +1,12 @@
 pragma solidity 0.4.23;
 
+/*
+ * @title Token Payment using Kyber API v0.1
+ * @author Haresh G
+ * @dev This contract is used to convert ETH to an ERC20 token on the Kyber Swap network.
+ * @notice It does not support ERC20 to ERC20 transfer. 
+ */
+
 import "./common/Ownable.sol";
 import "./common/ReentrancyGuard.sol";
 import "./interfaces/ERC20Interface.sol";
