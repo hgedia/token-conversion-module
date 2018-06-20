@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity ^0.4.23;
 /*
     /// @notice use token address ETH_TOKEN_ADDRESS for ether
     /// @dev makes a trade between src and dest token and send dest token to destAddress

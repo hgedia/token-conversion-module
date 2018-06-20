@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity ^0.4.23;
 
 /*
  * @title Token Payment using Bancor API v0.1
