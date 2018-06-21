@@ -9,14 +9,17 @@ pragma solidity 0.4.23;
 
 import "./common/Ownable.sol";
 import "./common/ReentrancyGuard.sol";
+import "./common/SafeMath.sol";
 import {ERC20 as IERC20Token} from "./interfaces/ERC20Interface.sol";
 import "./interfaces/IBancorNetwork.sol";
 
 
 
 contract IndTokenPayment is Ownable, ReentrancyGuard {  
+    using SafeMath for uint256;
     IERC20Token[] public path;    
     address public destinationWallet;       
+    //Minimum tokens per 1 ETH to convert
     uint256 public minConversionRate;
     IContractRegistry public bancorRegistry;
     bytes32 public constant BANCOR_NETWORK = "BancorNetwork";
@@ -52,8 +55,7 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     function convertToInd() internal nonReentrant {
         assert(bancorRegistry.getAddress(BANCOR_NETWORK) != address(0));
         IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
-        //TODO : Compute minReturn
-        uint256 minReturn =0;
+        uint256 minReturn = minConversionRate.mul(msg.value);
         uint256 convTokens =  bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);        
         assert(convTokens > 0);
         emit conversionSucceded(msg.sender,msg.value,destinationWallet,convTokens);                                                                    
@@ -76,11 +78,21 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
         }        
         return true;
     }
-
  
     function () public payable {
         //Bancor contract can send the transfer back in case of error, which goes back into this
         //function ,convertToInd is non-reentrant.
         convertToInd();
     }
+
+    /*
+    * Helper functions to debug contract. Not to be deployed [TBD]
+    *
+    */
+
+    function getBancorContractAddress() public view returns(address) {
+        return bancorRegistry.getAddress(BANCOR_NETWORK);
+    }
+
+
 }
