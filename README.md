@@ -15,8 +15,7 @@ This contract accepts ETH and converts it to any other token available in Bancor
 
 Bancor uses a conversion path to convert from one token to another. This needs to be provided for all trade calls.
 From bancor repo : https://github.com/bancorprotocol/contracts
-
-/*    
+  
     A note on conversion path -
     Conversion path is a data structure that's used when converting a token to another token in the bancor network
     when the conversion cannot necessarily be done by single converter and might require multiple 'hops'.
@@ -29,7 +28,10 @@ From bancor repo : https://github.com/bancorprotocol/contracts
 
     Format:
     [source token, smart token, to token, smart token, to token...]
-*/
+
+Further reading on path resolution: https://support.bancor.network/hc/en-us/articles/360000878832-How-to-use-the-quickConvert-function
+
+Path to convert from ETH->IND
 
 * ETHTOKEN : 0xc0829421c1d260bd3cb3e0f06cfe2d52db2ce315 
 * BNT      : 0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c
@@ -45,3 +47,6 @@ Variables to initialize
 * Bancor Registry    = "0xd1997064f0fef8748c1de9b5ba53468c548738b3"
 * Min Conversion Rate= 9000 
 
+TODO:
+
+Test cases
