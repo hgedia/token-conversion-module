@@ -14,7 +14,7 @@ This contract accepts ETH and converts it to any other token available in Kyber 
 This contract accepts ETH and converts it to any other token available in Bancor Network.
 
 Bancor uses a conversion path to convert from one token to another. This needs to be provided for all trade calls.
-From bancor repo : https://github.com/bancorprotocol/contracts
+Details from [bancor repo](https://github.com/bancorprotocol/contracts)
   
     A note on conversion path -
     Conversion path is a data structure that's used when converting a token to another token in the bancor network
@@ -29,7 +29,7 @@ From bancor repo : https://github.com/bancorprotocol/contracts
     Format:
     [source token, smart token, to token, smart token, to token...]
 
-Further reading on path resolution: https://support.bancor.network/hc/en-us/articles/360000878832-How-to-use-the-quickConvert-function
+Further reading on path resolution on [Bancor API](https://support.bancor.network/hc/en-us/articles/360000878832-How-to-use-the-quickConvert-function)
 
 Path to convert from ETH->IND
 
