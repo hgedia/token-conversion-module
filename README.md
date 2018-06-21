@@ -31,17 +31,17 @@ From bancor repo : https://github.com/bancorprotocol/contracts
     [source token, smart token, to token, smart token, to token...]
 */
 
-Example with a more optimised path : https://etherscan.io/tx/0x219b5b1f97a24d95b6dec5f5728f7b69461f48344e6be302dcffeabef9ae34cf
+* ETHTOKEN : 0xc0829421c1d260bd3cb3e0f06cfe2d52db2ce315 
+* BNT      : 0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c
+* BNT      : 0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c
+* INDBNT   : 0x32423158e8fbd2839e085626f8a98d86b2766de8
+* IND      : 0xf8e386eda857484f5a12e4b5daa9984e06e73705
 
-ETHTOKEN : 0xc0829421c1d260bd3cb3e0f06cfe2d52db2ce315 
-BNT      : 0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c
-BNT      : 0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c
-INDBNT   : 0x32423158e8fbd2839e085626f8a98d86b2766de8
-IND      : 0xf8e386eda857484f5a12e4b5daa9984e06e73705
+Variables to initialize
 
-Path = ["0xc0829421c1d260bd3cb3e0f06cfe2d52db2ce315","0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c","0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c","0x32423158e8fbd2839e085626f8a98d86b2766de8","0xf8e386eda857484f5a12e4b5daa9984e06e73705"]
-Destination Wallet = "0x46B8086916fec41eE2E46AAD91036e08eFc76c48"
-Destination Wallet = "0x1111111111111111111111111111111111111111"
-Bancor Registry    = "0xd1997064f0fef8748c1de9b5ba53468c548738b3"
-Min Conversion Rate= 9000 
+* Path =  ["0xc0829421c1d260bd3cb3e0f06cfe2d52db2ce315","0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c","0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c","0x32423158e8fbd2839e085626f8a98d86b2766de8","0xf8e386eda857484f5a12e4b5daa9984e06e73705"]
+* Destination Wallet = "0x46B8086916fec41eE2E46AAD91036e08eFc76c48"
+* Destination Wallet = "0x1111111111111111111111111111111111111111"
+* Bancor Registry    = "0xd1997064f0fef8748c1de9b5ba53468c548738b3"
+* Min Conversion Rate= 9000 
 
