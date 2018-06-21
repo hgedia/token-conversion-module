@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity ^0.4.23;
 
 /**
  * Reentrancy guard from open Zepplin :

@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity ^0.4.23;
 import {ERC20 as IERC20Token} from "./ERC20Interface.sol";
 
 contract IBancorNetwork {
