@@ -24,7 +24,7 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     IContractRegistry public bancorRegistry;
     bytes32 public constant BANCOR_NETWORK = "BancorNetwork";
     
-    event conversionSucceded(address from,uint256 fromTokenVal,address dest,uint256 destTokenVal);    
+    event conversionSucceded(address from,uint256 fromTokenVal,address dest,uint256 minReturn,uint256 destTokenVal);    
     
     constructor(IERC20Token[] _path,
                 address destWalletAddr,
@@ -52,18 +52,18 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
         destinationWallet = destWalletAddr;
     }    
     
-    function convertToInd() internal nonReentrant {
+    function convertToInd() internal {
         assert(bancorRegistry.getAddress(BANCOR_NETWORK) != address(0));
         IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
         uint256 minReturn = minConversionRate.mul(msg.value);
         uint256 convTokens =  bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);        
-        assert(convTokens > 0);
-        emit conversionSucceded(msg.sender,msg.value,destinationWallet,convTokens);                                                                    
+        assert(convTokens >= minReturn);
+        emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens);                                                                    
     }
 
     //If accidentally tokens are transferred to this
-    //contract. They can be withdrawn by the followin interface.
-    function withdrawToken(IERC20Token anyToken) public onlyOwner nonReentrant returns(bool){
+    //contract. They can be withdrawn by the following interface.
+    function withdrawERC20Token(IERC20Token anyToken) public onlyOwner nonReentrant returns(bool){
         if( anyToken != address(0x0) ) {
             assert(anyToken.transfer(destinationWallet, anyToken.balanceOf(this)));
         }
@@ -86,7 +86,7 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     }
 
     /*
-    * Helper functions to debug contract. Not to be deployed [TBD]
+    * Helper function
     *
     */
 
