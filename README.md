@@ -1,4 +1,4 @@
-# Token converion
+# Token conversion
 
 This module can be used when a payment needs to be accepted in one ERC20 currency , but the sender has a preference to use ETH. We can achieve this using the trade/conversion API's by various dApps. This repo demostrates the conversion of ETH to any of the ERC20 tokens (supported by the exchange used).
 
