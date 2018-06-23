@@ -10,8 +10,8 @@ pragma solidity ^0.4.23;
 import "./common/Ownable.sol";
 import "./common/ReentrancyGuard.sol";
 import "./common/SafeMath.sol";
-import {ERC20 as IERC20Token} from "./interfaces/ERC20Interface.sol";
 import "./interfaces/IBancorNetwork.sol";
+import {ERC20 as IERC20Token} from "./interfaces/ERC20Interface.sol";
 
 
 
@@ -29,7 +29,7 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     constructor(IERC20Token[] _path,
                 address destWalletAddr,
                 address bancorRegistryAddr,
-                uint256 minConvRate){
+                uint256 minConvRate) public{
         path = _path;
         bancorRegistry = IContractRegistry(bancorRegistryAddr);
         destinationWallet = destWalletAddr;         

@@ -12,7 +12,7 @@ interface ERC20 {
 }
 
 //TODO : Flattener does not like aliased imports. Not needed in actual codebase.
-
+/*
 interface IERC20Token {
     function totalSupply() public view returns (uint supply);
     function balanceOf(address _owner) public view returns (uint balance);
@@ -23,3 +23,4 @@ interface IERC20Token {
     function decimals() public view returns(uint digits);
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 }
+*/
