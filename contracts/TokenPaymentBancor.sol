@@ -53,12 +53,13 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     }    
     
     function convertToInd() internal {
-        assert(bancorRegistry.getAddress(BANCOR_NETWORK) != address(0));
-        IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
-        uint256 minReturn = minConversionRate.mul(msg.value);
-        uint256 convTokens =  bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);        
-        assert(convTokens >= minReturn);
-        emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens);                                                                    
+        //assert(bancorRegistry.getAddress(BANCOR_NETWORK) != address(0));
+        //IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
+        //uint256 minReturn = minConversionRate.mul(msg.value);
+        //uint256 convTokens =  bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);        
+        //assert(convTokens >= minReturn);
+        //emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens);
+        emit conversionSucceded(msg.sender,msg.value,destinationWallet,1,1);                                                                                                                                        
     }
 
     //If accidentally tokens are transferred to this
@@ -82,6 +83,7 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     function () public payable nonReentrant {
         //Bancor contract can send the transfer back in case of error, which goes back into this
         //function ,convertToInd is non-reentrant.
+        emit conversionSucceded(msg.sender,msg.value,destinationWallet,1,1); 
         convertToInd();
     }
 
@@ -91,8 +93,10 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     */
 
     function getBancorContractAddress() public view returns(address) {
-        return bancorRegistry.getAddress(BANCOR_NETWORK);
+        return bancorRegistry.getAddress(BANCOR_NETWORK);        
     }
 
-
+    function getPath(uint256 val) public view returns (address){
+        return path[val];
+    }
 }
