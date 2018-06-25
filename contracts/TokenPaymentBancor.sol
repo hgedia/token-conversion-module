@@ -82,7 +82,7 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     function () public payable nonReentrant {
         //Bancor contract can send the transfer back in case of error, which goes back into this
         //function ,convertToInd is non-reentrant.
-        emit conversionSucceded(msg.sender,msg.value,destinationWallet,1,1); 
+        //emit conversionSucceded(msg.sender,msg.value,destinationWallet,1,1); 
         convertToInd();
     }
 
