@@ -53,13 +53,12 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     }    
     
     function convertToInd() internal {
-        //assert(bancorRegistry.getAddress(BANCOR_NETWORK) != address(0));
-        //IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
-        //uint256 minReturn = minConversionRate.mul(msg.value);
-        //uint256 convTokens =  bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);        
-        //assert(convTokens >= minReturn);
-        //emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens);
-        emit conversionSucceded(msg.sender,msg.value,destinationWallet,1,1);                                                                                                                                        
+        assert(bancorRegistry.getAddress(BANCOR_NETWORK) != address(0));
+        IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
+        uint256 minReturn = minConversionRate.mul(msg.value);
+        uint256 convTokens = bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);
+        assert(convTokens >= minReturn);
+        emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens);
     }
 
     //If accidentally tokens are transferred to this
