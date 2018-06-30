@@ -9,14 +9,14 @@ import {ERC20 as IERC20Token} from "../interfaces/ERC20Interface.sol";
 
 
 contract BancorNetworkSuccess {
-    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn) public payable returns (uint256){
+    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
         return 100;
     }
 }
 
 
 contract BancorNetworkFailed {
-    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn) public payable returns (uint256){
+    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
         return 0;
     }
 }
@@ -27,21 +27,21 @@ contract BancorNetworkReEntrant {
         reentrantCall = reentryConract;
     }
 
-    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn) public payable returns (uint256){
+    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
         //TODO : Re-entrant call here
         return 0;
     }
 }
 
 contract BancorNetworkException {
-    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn) public payable returns (uint256){
+    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
         require(false);
         return 0;
     }
 }
 
 contract BancorNetworkPartialConversion {
-    function convert(IERC20Token[] _path, uint256 _amount, uint256 _minReturn) public payable returns (uint256){
+    function convert(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
         //TODO : call a transfer back
         return 0;
     }

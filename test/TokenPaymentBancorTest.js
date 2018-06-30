@@ -1,8 +1,9 @@
 const bancorNetworkSuccess = artifacts.require('BancorNetworkSuccess');
 const bancorContractRegistry = artifacts.require('BancorContractRegistry')
 const tokenConversionModule = artifacts.require('IndTokenPayment')
+const abiDecoder = require('abi-decoder'); 
 
-let bancorNetworkHash = 0x42616e636f724e6574776f726b00000000000000000000000000000000000000;
+let bancorNetworkHash = '0x42616e636f724e6574776f726b00000000000000000000000000000000000000';
 
 //vars
 let contractRegistry;
@@ -16,63 +17,44 @@ contract('BancorNetwork', accounts => {
                      
     let minConvRate = 1;
 
-    before(async () => {
-        //let convPath = ['0x01' , '0x02' , '0x03'];
-        contractRegistry = await bancorContractRegistry.new();
-        console.log("Registry deployed at : " + contractRegistry.address);
+    before(async () => {       
+        contractRegistry = await bancorContractRegistry.new();        
     })
+
+    function parseLogs(decodedLog){
+        //Only one Event due to mocks, so using index 0
+        let parsedEvent = {};
+        let event = decodedLog[0];        
+        for (elem of event.events){         
+            if(elem.name == "from"){
+                parsedEvent.from = elem.value;
+            } else if (elem.name == "fromTokenVal"){
+                parsedEvent.fromTokenVal = elem.value;
+            } else if (elem.name =="dest"){
+                parsedEvent.dest = elem.value;
+            } else if (elem.name == "minReturn") {
+                parsedEvent.minReturn = elem.value;
+            } else if (elem.name == "destTokenVal") {
+                parsedEvent.destTokenVal = elem.value;
+            }
+        }
+        return parsedEvent;
+    }
 
  
     it('should sucessfully convert ETH to ERC20 tokens on convertFor call', async () => {    
-
-        let bancorNwSuccess = await bancorNetworkSuccess.new();
-        console.log("Bancor contract deployed at : " + bancorNwSuccess.address );
-
-        await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);                
-        let regVal = await contractRegistry.getAddress(bancorNetworkHash);
-        console.log("Bancor Contract address from registry " + regVal)
-
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);
-        
+        let bancorNwSuccess = await bancorNetworkSuccess.new();      
+        await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
         let tokAddr = tokenConvertor.address;
-        console.log("Token convertor deployed at : " + tokAddr);
-
-        console.log("-----------------------------------------------------------")   
-        let path0 = await tokenConvertor.getPath(0);
-        let path1 = await tokenConvertor.getPath(1);
-        console.log("Path is " + path0 + " , path1 " + path1);
-
-        let banReg = await tokenConvertor.bancorRegistry();
-        console.log("Registry token contract " + banReg);
-
-        let dwall = await tokenConvertor.destinationWallet();
-        console.log("DestWallet from contract " + dwall);
-
-        let minRate = await tokenConvertor.minConversionRate();
-        console.log("Min Rate from token contract " + minRate);     
-
-        let bancorAdd = await tokenConvertor.getBancorContractAddress();
-        console.log("Bancor address from token contract : " + bancorAdd);        
-
-        let bancorHash = await tokenConvertor.BANCOR_NETWORK();
-        console.log("Bancor Hash  : " + bancorHash);        
-
-
-        let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })
-        console.log("Result " + JSON.stringify(result));
+        let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })        
         let recpt = await web3.eth.getTransactionReceipt(result);
-        console.log("Result " + JSON.stringify(recpt.status));
-
-        //console.log("Token Convertor " + JSON.stringify(tokenConvertor.address));
-
-        //let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0], to: tokenConvertor.address, value: 10, gas: 900000 })
-        /*
-        
-        console.log("Result " + JSON.stringify(result));
-        let recpt = await web3.eth.getTransactionReceipt(result);
-        console.log("Result " + JSON.stringify(recpt.status));
-        */
-        
+        abiDecoder.addABI(tokenConvertor.abi);
+        const parsedEvent = parseLogs(abiDecoder.decodeLogs(recpt.logs));
+        assert.equal(parsedEvent.from, web3.eth.accounts[0]);
+        assert.equal(parsedEvent.fromTokenVal, 10);
+        assert.equal(parsedEvent.dest, destWallet);
+        assert(parsedEvent.destTokenVal > minConvRate* 10,"Invalid conversion");       
     });   
 
     /*

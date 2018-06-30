@@ -57,6 +57,7 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
         IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
         uint256 minReturn = minConversionRate.mul(msg.value);
         uint256 convTokens = bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);
+        //TODO: Use destination balance as opposed to returned values
         assert(convTokens >= minReturn);
         emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens);
     }
@@ -82,7 +83,6 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     function () public payable nonReentrant {
         //Bancor contract can send the transfer back in case of error, which goes back into this
         //function ,convertToInd is non-reentrant.
-        //emit conversionSucceded(msg.sender,msg.value,destinationWallet,1,1); 
         convertToInd();
     }
 
@@ -95,7 +95,4 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
         return bancorRegistry.getAddress(BANCOR_NETWORK);        
     }
 
-    function getPath(uint256 val) public view returns (address){
-        return path[val];
-    }
 }
