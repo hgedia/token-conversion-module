@@ -1,21 +1,23 @@
 const bancorNetworkSuccess = artifacts.require('BancorNetworkSuccess');
 const bancorContractRegistry = artifacts.require('BancorContractRegistry')
 const tokenConversionModule = artifacts.require('IndTokenPayment')
+const SelfDestructor = artifacts.require('SelfDestructor')
 const abiDecoder = require('abi-decoder'); 
 
-let bancorNetworkHash = '0x42616e636f724e6574776f726b00000000000000000000000000000000000000';
 
 //vars
-let contractRegistry;
-let tokenConver
+
 
 
 contract('BancorNetwork', accounts => {
 
     let convPath1 = ['0x8fba0c8740177d44b5a75d469b9a69562905cf13', '0x8fba0c8740177d44b5a75d469b9a69562905cf23'];
     let destWallet = '0xf20b9e713a33f61fa38792d2afaf1cd30339126a';
-                     
+    let bancorNetworkHash = '0x42616e636f724e6574776f726b00000000000000000000000000000000000000';
     let minConvRate = 1;
+    let randomEthAddress = '0x8a3886bb62739408310d126bfa951a6dbf8647b8'
+    let contractRegistry;
+                   
 
     before(async () => {       
         contractRegistry = await bancorContractRegistry.new();        
@@ -55,12 +57,24 @@ contract('BancorNetwork', accounts => {
         assert.equal(parsedEvent.fromTokenVal, 10);
         assert.equal(parsedEvent.dest, destWallet);
         assert(parsedEvent.destTokenVal > minConvRate* 10,"Invalid conversion");       
-    });   
+    });
+
+    it('should sucessfully withdraw ER20 tokens if locked in contract', async () => {
+        let bancorNwSuccess = await bancorNetworkSuccess.new();      
+        await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
+        let selfDestruct = await SelfDestructor.new()
+        await web3.eth.sendTransaction({ from: web3.eth.accounts[0] ,value:10 , to: selfDestruct.address});
+        await selfDestruct.killIt(tokenConvertor.address);
+        assert.equal(web3.eth.getBalance(tokenConvertor.address).toNumber(),10);
+        assert.equal(web3.eth.getBalance(destWallet).toNumber(),0);
+        await tokenConvertor.withdrawEther();
+        assert.equal(web3.eth.getBalance(destWallet).toNumber(),10);
+        assert.equal(web3.eth.getBalance(tokenConvertor.address).toNumber(),0);
+    });
 
     /*
-    it('should sucessfully withdraw ER20 tokens if locked in contract', async () => {
-        //assert(false);
-    });        
+        
     
     
 
