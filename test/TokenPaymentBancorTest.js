@@ -3,10 +3,7 @@ const bancorContractRegistry = artifacts.require('BancorContractRegistry')
 const tokenConversionModule = artifacts.require('IndTokenPayment')
 const SelfDestructor = artifacts.require('SelfDestructor')
 const abiDecoder = require('abi-decoder'); 
-
-
-//vars
-
+const utils  = require("./Utils")
 
 
 contract('BancorNetwork', accounts => {
@@ -73,35 +70,71 @@ contract('BancorNetwork', accounts => {
         assert.equal(web3.eth.getBalance(tokenConvertor.address).toNumber(),0);
     });
 
-    /*
-        
-    
-    
-
-    it('should sucessfully withdraw ETH if locked in contract', async () => {
-        assert(false);
-    });        
-
-
     it('should fail to convert when bancor network is missing in registry', async () => {
-        assert(false);
+        let emptyRegistry = await bancorContractRegistry.new();
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, emptyRegistry.address, minConvRate);        
+        let tokAddr = tokenConvertor.address;
+        try{
+            let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 }) 
+            throw('Should not execute');       
+        }catch(error){
+            utils.ensureException(error);
+        }
     });   
+
+    it('should fail to execeute ownerOnly functions', async () => {
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);
+        
+        try{
+            await tokenConvertor.setConversionPath(convPath1,{from: web3.eth.accounts[1]});
+            throw('Should not execute');
+        }catch(error){
+             utils.ensureException(error);
+        }
+
+        try{
+            await tokenConvertor.setBancorRegistry(destWallet,{from: web3.eth.accounts[1]});
+            throw('Should not execute');
+        }catch(error){
+             utils.ensureException(error);
+        }
+
+        try{
+            await tokenConvertor.setMinConversionRate(10,{from: web3.eth.accounts[1]});
+            throw('Should not execute');
+        }catch(error){
+             utils.ensureException(error);
+        }
+
+        try{
+            await tokenConvertor.setDestinationWallet(destWallet,{from: web3.eth.accounts[1]});
+            throw('Should not execute');
+        }catch(error){
+             utils.ensureException(error);
+        }
+
+        try{
+            await tokenConvertor.withdrawERC20Token(destWallet,{from: web3.eth.accounts[1]});
+            throw('Should not execute');
+        }catch(error){
+             utils.ensureException(error);
+        }
+
+        try{
+            await tokenConvertor.withdrawEther({from: web3.eth.accounts[1]});
+            throw('Should not execute');
+        }catch(error){            
+            utils.ensureException(error);
+        }
+        
+    });    
+
+    /*
 
     it('should fail to convert when bancor network throws an exception', async () => {
         assert(false);
     });    
-    
-    it('should fail to execeute ownerOnly functions', async () => {
-        assert(false);
-    });    
         
-    it('should fail to withdraw ETH if called by non owner', async () => {
-        assert(false);
-    });        
-
-    it('should fail to withdraw ERC20 tokens if called by non owner', async () => {
-        assert(false);
-    });      
 
     it('should fail if reentrancy is encountered', async () => {
         assert(false);
