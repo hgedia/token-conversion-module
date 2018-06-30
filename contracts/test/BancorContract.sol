@@ -17,7 +17,8 @@ contract BancorNetworkSuccess {
 
 contract BancorNetworkFailed {
     function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
-        return 0;
+        assert(false);
+        return 10;
     }
 }
 
@@ -29,20 +30,6 @@ contract BancorNetworkReEntrant {
 
     function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
         //TODO : Re-entrant call here
-        return 0;
-    }
-}
-
-contract BancorNetworkException {
-    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
-        require(false);
-        return 0;
-    }
-}
-
-contract BancorNetworkPartialConversion {
-    function convert(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
-        //TODO : call a transfer back
         return 0;
     }
 }

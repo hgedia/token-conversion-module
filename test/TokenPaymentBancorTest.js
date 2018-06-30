@@ -1,7 +1,9 @@
 const bancorNetworkSuccess = artifacts.require('BancorNetworkSuccess');
+const bancorNetworkFailed = artifacts.require('BancorNetworkFailed')
 const bancorContractRegistry = artifacts.require('BancorContractRegistry')
 const tokenConversionModule = artifacts.require('IndTokenPayment')
 const SelfDestructor = artifacts.require('SelfDestructor')
+const dummyERC20 = artifacts.require('DummyERC20')
 const abiDecoder = require('abi-decoder'); 
 const utils  = require("./Utils")
 
@@ -40,8 +42,7 @@ contract('BancorNetwork', accounts => {
         return parsedEvent;
     }
 
- 
-    it('should sucessfully convert ETH to ERC20 tokens on convertFor call', async () => {    
+     it('should sucessfully convert ETH to ERC20 tokens on convertFor call', async () => {    
         let bancorNwSuccess = await bancorNetworkSuccess.new();      
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
         let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
@@ -125,16 +126,55 @@ contract('BancorNetwork', accounts => {
             throw('Should not execute');
         }catch(error){            
             utils.ensureException(error);
-        }
-        
-    });    
-
-    /*
-
+        }        
+    });  
+   
     it('should fail to convert when bancor network throws an exception', async () => {
-        assert(false);
+        let bancorNwFail = await bancorNetworkFailed.new();      
+        await contractRegistry.setAddress(bancorNetworkHash, bancorNwFail.address);
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
+        let tokAddr = tokenConvertor.address;
+        try{
+            let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 });
+            throw('Should not execute')
+        }catch(error){
+            utils.ensureException(error);
+        }         
+    });
+
+    it('should fail if less than requested tokens are returned back', async () => {
+        let bancorNwSuccess = await bancorNetworkSuccess.new();      
+        await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
+        let highConvRate = 500;
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, highConvRate);        
+        let tokAddr = tokenConvertor.address;
+        try{
+            let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })
+            throw('Should not execute')        
+        } catch(error){
+            utils.ensureException(error);
+        }        
+    }); 
+    //TODO    
+    it('should be possible to extract any ERC20 token sent with destination as contract address', async () => {
+        let bancorNwSuccess = await bancorNetworkSuccess.new();
+        let dummyToken = await dummyERC20.new(web3.eth.accounts[1]);      
+        await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
+        let tokAddr = tokenConvertor.address;
+        try{
+            let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })
+            throw('Should not execute')        
+        } catch(error){
+            utils.ensureException(error);
+        }        
     });    
-        
+
+/*
+ 
+    
+   
+
 
     it('should fail if reentrancy is encountered', async () => {
         assert(false);
@@ -142,7 +182,9 @@ contract('BancorNetwork', accounts => {
 
     it('should fail if any ETH is attempted to be sent back in any call', async () => {
         assert(false);
-    });   
+    });
+    
+
     */
 
 })
