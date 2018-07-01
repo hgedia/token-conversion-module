@@ -8,13 +8,12 @@ const abiDecoder = require('abi-decoder');
 const utils  = require("./Utils")
 
 
-contract('BancorNetwork', accounts => {
+contract('TokenPaymentBancor', accounts => {
 
     let convPath1 = ['0x8fba0c8740177d44b5a75d469b9a69562905cf13', '0x8fba0c8740177d44b5a75d469b9a69562905cf23'];
     let destWallet = '0xf20b9e713a33f61fa38792d2afaf1cd30339126a';
     let bancorNetworkHash = '0x42616e636f724e6574776f726b00000000000000000000000000000000000000';
-    let minConvRate = 1;
-    let randomEthAddress = '0x8a3886bb62739408310d126bfa951a6dbf8647b8'
+    let minConvRate = 1;    
     let contractRegistry;
                    
 
@@ -25,7 +24,7 @@ contract('BancorNetwork', accounts => {
     function parseLogs(decodedLog){
         //Only one Event due to mocks, so using index 0
         let parsedEvent = {};
-        let event = decodedLog[0];        
+        let event = decodedLog[0];  
         for (elem of event.events){         
             if(elem.name == "from"){
                 parsedEvent.from = elem.value;
@@ -37,24 +36,31 @@ contract('BancorNetwork', accounts => {
                 parsedEvent.minReturn = elem.value;
             } else if (elem.name == "destTokenVal") {
                 parsedEvent.destTokenVal = elem.value;
+            } else if (elem.name == "oldBalance") {
+                parsedEvent.oldBalance = elem.value;
+            } else if (elem.name == "newBalance") {
+                parsedEvent.newBalance = elem.value;
             }
         }
         return parsedEvent;
     }
 
      it('should sucessfully convert ETH to ERC20 tokens on convertFor call', async () => {    
-        let bancorNwSuccess = await bancorNetworkSuccess.new();      
+        let bancorNwSuccess = await bancorNetworkSuccess.new();   
+        let dummyToken = await dummyERC20.new(bancorNwSuccess.address);
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
+        convPath1.push(dummyToken.address);        
         let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
-        let tokAddr = tokenConvertor.address;
-        let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })        
+        let tokAddr = tokenConvertor.address;       
+        let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })  
         let recpt = await web3.eth.getTransactionReceipt(result);
         abiDecoder.addABI(tokenConvertor.abi);
         const parsedEvent = parseLogs(abiDecoder.decodeLogs(recpt.logs));
         assert.equal(parsedEvent.from, web3.eth.accounts[0]);
         assert.equal(parsedEvent.fromTokenVal, 10);
         assert.equal(parsedEvent.dest, destWallet);
-        assert(parsedEvent.destTokenVal > minConvRate* 10,"Invalid conversion");       
+        assert(parsedEvent.destTokenVal > minConvRate* 10,"Invalid conversion");   
+  
     });
 
     it('should sucessfully withdraw ER20 tokens if locked in contract', async () => {
@@ -146,6 +152,8 @@ contract('BancorNetwork', accounts => {
         let bancorNwSuccess = await bancorNetworkSuccess.new();      
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
         let highConvRate = 500;
+        let dummyToken = await dummyERC20.new(bancorNwSuccess.address);
+        convPath1.push(dummyToken.address);        
         let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, highConvRate);        
         let tokAddr = tokenConvertor.address;
         try{
@@ -168,14 +176,8 @@ contract('BancorNetwork', accounts => {
         await tokenConvertor.withdrawERC20Token(dummyToken.address)
         let destWalletNewERC20Balance = await dummyToken.balanceOf(destWallet);
         assert.equal(destWalletNewERC20Balance.toNumber(),200);
-    });    
-
-/*
- 
-    
-   
-
-
+    });
+    /*
     it('should fail if reentrancy is encountered', async () => {
         assert(false);
     });
@@ -183,8 +185,6 @@ contract('BancorNetwork', accounts => {
     it('should fail if any ETH is attempted to be sent back in any call', async () => {
         assert(false);
     });
-    
-
     */
 
 })

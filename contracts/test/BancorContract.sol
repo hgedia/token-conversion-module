@@ -10,6 +10,8 @@ import {ERC20 as IERC20Token} from "../interfaces/ERC20Interface.sol";
 
 contract BancorNetworkSuccess {
     function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
+        IERC20Token tokenContract  = IERC20Token(_path[_path.length-1]);
+        tokenContract.transfer(_for,100);
         return 100;
     }
 }

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
 /*
- * @title Token Payment using Bancor API v0.1
+ * @title Token Payment using Bancor API v0.2
  * @author Haresh G
  * @dev This contract is used to convert ETH to an ERC20 token on the Bancor network.
  * @notice It does not support ERC20 to ERC20 transfer.
@@ -22,9 +22,16 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
     //Minimum tokens per 1 ETH to convert
     uint256 public minConversionRate;
     IContractRegistry public bancorRegistry;
-    bytes32 public constant BANCOR_NETWORK = "BancorNetwork";
-    
-    event conversionSucceded(address from,uint256 fromTokenVal,address dest,uint256 minReturn,uint256 destTokenVal);    
+    bytes32 public constant BANCOR_NETWORK = "BancorNetwork";    
+    IERC20Token destTokenContract; //Contract we are trying to convert to.
+
+    event conversionSucceded(address from, //Address from where the transaction was received
+                            uint256 fromTokenVal, //Amount to be converted
+                            address dest, // Address where converted tokens are to be deposited
+                            uint256 minReturn, // The minimum converion rate
+                            uint256 destTokenVal, // The number of tokens which were converted
+                            uint256 oldBalance, // Old balance of destination wallet
+                            uint256 newBalance); // New balance of destination wallet
     
     constructor(IERC20Token[] _path,
                 address destWalletAddr,
@@ -34,10 +41,12 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
         bancorRegistry = IContractRegistry(bancorRegistryAddr);
         destinationWallet = destWalletAddr;         
         minConversionRate = minConvRate;
+        destTokenContract = IERC20Token(_path[path.length-1]);
     }
 
     function setConversionPath(IERC20Token[] _path) public onlyOwner {
         path = _path;
+        destTokenContract = IERC20Token(_path[path.length-1]);
     }
     
     function setBancorRegistry(address bancorRegistryAddr) public onlyOwner {
@@ -56,10 +65,12 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
         assert(bancorRegistry.getAddress(BANCOR_NETWORK) != address(0));
         IBancorNetwork bancorNetwork = IBancorNetwork(bancorRegistry.getAddress(BANCOR_NETWORK));   
         uint256 minReturn = minConversionRate.mul(msg.value);
+        uint256 oldBalance = destTokenContract.balanceOf(destinationWallet);
+        uint256 minNewBalance = oldBalance.add(minReturn);
         uint256 convTokens = bancorNetwork.convertFor.value(msg.value)(path,msg.value,minReturn,destinationWallet);
-        //TODO: Use destination balance as opposed to returned values
-        assert(convTokens >= minReturn);
-        emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens);
+        uint256 newBalance = destTokenContract.balanceOf(destinationWallet);
+        assert(newBalance >= minNewBalance);
+        emit conversionSucceded(msg.sender,msg.value,destinationWallet,minReturn,convTokens,oldBalance,newBalance);
     }
 
     //If accidentally tokens are transferred to this
@@ -85,14 +96,11 @@ contract IndTokenPayment is Ownable, ReentrancyGuard {
         //function ,convertToInd is non-reentrant.
         convertToInd();
     }
-
     /*
     * Helper function
     *
     */
-
     function getBancorContractAddress() public view returns(address) {
         return bancorRegistry.getAddress(BANCOR_NETWORK);        
     }
-
 }
