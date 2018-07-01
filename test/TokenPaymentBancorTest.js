@@ -3,7 +3,7 @@ const bancorNetworkFailed = artifacts.require('BancorNetworkFailed')
 const bancorContractRegistry = artifacts.require('BancorContractRegistry')
 const tokenConversionModule = artifacts.require('IndTokenPayment')
 const SelfDestructor = artifacts.require('SelfDestructor')
-const dummyERC20 = artifacts.require('DummyERC20')
+const dummyERC20 = artifacts.require('DummyToken')
 const abiDecoder = require('abi-decoder'); 
 const utils  = require("./Utils")
 
@@ -155,19 +155,19 @@ contract('BancorNetwork', accounts => {
             utils.ensureException(error);
         }        
     }); 
-    //TODO    
+
+    
     it('should be possible to extract any ERC20 token sent with destination as contract address', async () => {
         let bancorNwSuccess = await bancorNetworkSuccess.new();
-        let dummyToken = await dummyERC20.new(web3.eth.accounts[1]);      
+        let dummyToken = await dummyERC20.new(web3.eth.accounts[1]);
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
-        let tokAddr = tokenConvertor.address;
-        try{
-            let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })
-            throw('Should not execute')        
-        } catch(error){
-            utils.ensureException(error);
-        }        
+        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);
+        await dummyToken.transfer(tokenConvertor.address, 200, { from: web3.eth.accounts[1]})
+        let destWalletOldERC20Balance = await dummyToken.balanceOf(destWallet);
+        assert.equal(destWalletOldERC20Balance.toNumber(), 0)
+        await tokenConvertor.withdrawERC20Token(dummyToken.address)
+        let destWalletNewERC20Balance = await dummyToken.balanceOf(destWallet);
+        assert.equal(destWalletNewERC20Balance.toNumber(),200);
     });    
 
 /*
