@@ -1,5 +1,6 @@
 const bancorNetworkSuccess = artifacts.require('BancorNetworkSuccess');
 const bancorNetworkFailed = artifacts.require('BancorNetworkFailed')
+const bancorNetworkReEntrant = artifacts.require('BancorNetworkReEntrant')
 const bancorContractRegistry = artifacts.require('BancorContractRegistry')
 const tokenConversionModule = artifacts.require('IndTokenPayment')
 const SelfDestructor = artifacts.require('SelfDestructor')
@@ -10,7 +11,7 @@ const utils  = require("./Utils")
 
 contract('TokenPaymentBancor', accounts => {
 
-    let convPath1 = ['0x8fba0c8740177d44b5a75d469b9a69562905cf13', '0x8fba0c8740177d44b5a75d469b9a69562905cf23'];
+    let convPath = ['0x8fba0c8740177d44b5a75d469b9a69562905cf13', '0x8fba0c8740177d44b5a75d469b9a69562905cf23'];
     let destWallet = '0xf20b9e713a33f61fa38792d2afaf1cd30339126a';
     let bancorNetworkHash = '0x42616e636f724e6574776f726b00000000000000000000000000000000000000';
     let minConvRate = 1;    
@@ -23,25 +24,38 @@ contract('TokenPaymentBancor', accounts => {
 
     function parseLogs(decodedLog){
         //Only one Event due to mocks, so using index 0
-        let parsedEvent = {};
-        let event = decodedLog[0];  
-        for (elem of event.events){         
-            if(elem.name == "from"){
-                parsedEvent.from = elem.value;
-            } else if (elem.name == "fromTokenVal"){
-                parsedEvent.fromTokenVal = elem.value;
-            } else if (elem.name =="dest"){
-                parsedEvent.dest = elem.value;
-            } else if (elem.name == "minReturn") {
-                parsedEvent.minReturn = elem.value;
-            } else if (elem.name == "destTokenVal") {
-                parsedEvent.destTokenVal = elem.value;
-            } else if (elem.name == "oldBalance") {
-                parsedEvent.oldBalance = elem.value;
-            } else if (elem.name == "newBalance") {
-                parsedEvent.newBalance = elem.value;
+        let parsedEvent = {};    
+        for (event of decodedLog)        {
+            if (event.name == "reEntry"){
+                parsedEvent.r1Status = "UNKNOWN" //Set default
+                parsedEvent.r2Status = "UNKNOWN"
+                for (elem of event.events) {
+                    if (elem.name == "r1Status"){
+                        parsedEvent.r1Status = elem.value;
+                    }else if (elem.name == "r2Status") {
+                        parsedEvent.r2Status = elem.value;
+                    }                
+                }               
+            } else{ // The only other event emmited is conversionSucceeded
+                for (elem of event.events) {
+                    if (elem.name == "from") {
+                        parsedEvent.from = elem.value;
+                    } else if (elem.name == "fromTokenVal") {
+                        parsedEvent.fromTokenVal = elem.value;
+                    } else if (elem.name == "dest") {
+                        parsedEvent.dest = elem.value;
+                    } else if (elem.name == "minReturn") {
+                        parsedEvent.minReturn = elem.value;
+                    } else if (elem.name == "destTokenVal") {
+                        parsedEvent.destTokenVal = elem.value;
+                    } else if (elem.name == "oldBalance") {
+                        parsedEvent.oldBalance = elem.value;
+                    } else if (elem.name == "newBalance") {
+                        parsedEvent.newBalance = elem.value;
+                    }
+                }
             }
-        }
+        }        
         return parsedEvent;
     }
 
@@ -49,8 +63,8 @@ contract('TokenPaymentBancor', accounts => {
         let bancorNwSuccess = await bancorNetworkSuccess.new();   
         let dummyToken = await dummyERC20.new(bancorNwSuccess.address);
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
-        convPath1.push(dummyToken.address);        
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
+        convPath.push(dummyToken.address);        
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, contractRegistry.address, minConvRate);        
         let tokAddr = tokenConvertor.address;       
         let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })  
         let recpt = await web3.eth.getTransactionReceipt(result);
@@ -66,7 +80,7 @@ contract('TokenPaymentBancor', accounts => {
     it('should sucessfully withdraw ER20 tokens if locked in contract', async () => {
         let bancorNwSuccess = await bancorNetworkSuccess.new();      
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, contractRegistry.address, minConvRate);        
         let selfDestruct = await SelfDestructor.new()
         await web3.eth.sendTransaction({ from: web3.eth.accounts[0] ,value:10 , to: selfDestruct.address});
         await selfDestruct.killIt(tokenConvertor.address);
@@ -77,9 +91,22 @@ contract('TokenPaymentBancor', accounts => {
         assert.equal(web3.eth.getBalance(tokenConvertor.address).toNumber(),0);
     });
 
+    it('should be possible to extract any ERC20 token sent with destination as contract address', async () => {
+        let bancorNwSuccess = await bancorNetworkSuccess.new();
+        let dummyToken = await dummyERC20.new(web3.eth.accounts[1]);
+        await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, contractRegistry.address, minConvRate);
+        await dummyToken.transfer(tokenConvertor.address, 200, { from: web3.eth.accounts[1] })
+        let destWalletOldERC20Balance = await dummyToken.balanceOf(destWallet);
+        assert.equal(destWalletOldERC20Balance.toNumber(), 0)
+        await tokenConvertor.withdrawERC20Token(dummyToken.address)
+        let destWalletNewERC20Balance = await dummyToken.balanceOf(destWallet);
+        assert.equal(destWalletNewERC20Balance.toNumber(), 200);
+    });    
+
     it('should fail to convert when bancor network is missing in registry', async () => {
         let emptyRegistry = await bancorContractRegistry.new();
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, emptyRegistry.address, minConvRate);        
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, emptyRegistry.address, minConvRate);        
         let tokAddr = tokenConvertor.address;
         try{
             let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 }) 
@@ -90,10 +117,10 @@ contract('TokenPaymentBancor', accounts => {
     });   
 
     it('should fail to execeute ownerOnly functions', async () => {
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, contractRegistry.address, minConvRate);
         
         try{
-            await tokenConvertor.setConversionPath(convPath1,{from: web3.eth.accounts[1]});
+            await tokenConvertor.setConversionPath(convPath,{from: web3.eth.accounts[1]});
             throw('Should not execute');
         }catch(error){
              utils.ensureException(error);
@@ -138,7 +165,7 @@ contract('TokenPaymentBancor', accounts => {
     it('should fail to convert when bancor network throws an exception', async () => {
         let bancorNwFail = await bancorNetworkFailed.new();      
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwFail.address);
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);        
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, contractRegistry.address, minConvRate);        
         let tokAddr = tokenConvertor.address;
         try{
             let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 });
@@ -153,8 +180,8 @@ contract('TokenPaymentBancor', accounts => {
         await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
         let highConvRate = 500;
         let dummyToken = await dummyERC20.new(bancorNwSuccess.address);
-        convPath1.push(dummyToken.address);        
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, highConvRate);        
+        convPath.push(dummyToken.address);        
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, contractRegistry.address, highConvRate);        
         let tokAddr = tokenConvertor.address;
         try{
             let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0] , to: tokAddr, value: 10, gas: 900000 })
@@ -165,26 +192,19 @@ contract('TokenPaymentBancor', accounts => {
     }); 
 
     
-    it('should be possible to extract any ERC20 token sent with destination as contract address', async () => {
-        let bancorNwSuccess = await bancorNetworkSuccess.new();
-        let dummyToken = await dummyERC20.new(web3.eth.accounts[1]);
-        await contractRegistry.setAddress(bancorNetworkHash, bancorNwSuccess.address);
-        let tokenConvertor = await tokenConversionModule.new(convPath1, destWallet, contractRegistry.address, minConvRate);
-        await dummyToken.transfer(tokenConvertor.address, 200, { from: web3.eth.accounts[1]})
-        let destWalletOldERC20Balance = await dummyToken.balanceOf(destWallet);
-        assert.equal(destWalletOldERC20Balance.toNumber(), 0)
-        await tokenConvertor.withdrawERC20Token(dummyToken.address)
-        let destWalletNewERC20Balance = await dummyToken.balanceOf(destWallet);
-        assert.equal(destWalletNewERC20Balance.toNumber(),200);
+    it('should fail if any reentrancy is encountered', async () => {
+        let bancorNwReEntrant = await bancorNetworkReEntrant.new();
+        let dummyToken = await dummyERC20.new(bancorNwReEntrant.address);
+        await contractRegistry.setAddress(bancorNetworkHash, bancorNwReEntrant.address);
+        convPath.push(dummyToken.address);
+        let tokenConvertor = await tokenConversionModule.new(convPath, destWallet, contractRegistry.address, minConvRate);
+        let tokAddr = tokenConvertor.address;
+        let result = await web3.eth.sendTransaction({ from: web3.eth.accounts[0], to: tokAddr, value: 10, gas: 900000 })
+        let recpt = await web3.eth.getTransactionReceipt(result);
+        abiDecoder.addABI(tokenConvertor.abi);
+        abiDecoder.addABI(bancorNwReEntrant.abi);
+        const parsedEvent = parseLogs(abiDecoder.decodeLogs(recpt.logs));        
+        assert.equal(parsedEvent.r1Status,false);
+        assert.equal(parsedEvent.r2Status, false);
     });
-    /*
-    it('should fail if reentrancy is encountered', async () => {
-        assert(false);
-    });
-
-    it('should fail if any ETH is attempted to be sent back in any call', async () => {
-        assert(false);
-    });
-    */
-
 })

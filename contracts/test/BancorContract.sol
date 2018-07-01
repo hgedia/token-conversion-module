@@ -25,14 +25,16 @@ contract BancorNetworkFailed {
 }
 
 contract BancorNetworkReEntrant {
-    address reentrantCall;
-    function setReEntrantContract(address reentryConract)public {
-        reentrantCall = reentryConract;
-    }
-
-    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){
-        //TODO : Re-entrant call here
-        return 0;
+    event reEntry(bool r1Status,bool r2Status);
+    function convertFor(IERC20Token[] _path, uint256 _amount, uint256 _minReturn,address _for) public payable returns (uint256){        
+        address callingContract  = msg.sender;
+        bool result1 = callingContract.call(bytes4(sha3("withdrawEther()")));//calling contract again
+        bool result2 = callingContract.call(bytes4(sha3("sayHello()")));//fallback here
+        emit reEntry(result1,result2);
+        //Carry on
+        IERC20Token tokenContract  = IERC20Token(_path[_path.length-1]);
+        tokenContract.transfer(_for,1000);        
+        return 1000;
     }
 }
 
